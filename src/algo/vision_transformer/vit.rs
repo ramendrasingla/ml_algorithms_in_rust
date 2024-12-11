@@ -1,40 +1,46 @@
-use tch::{nn, Tensor};
-use tch::nn::{Module, Linear}; 
-use crate::algo::ViT::transformer_block::TransformerBlock;
+use tch::{Tensor, Kind, nn};
+use tch::nn::{Module, Linear, Optimizer, OptimizerConfig};
+use crate::algo::vision_transformer::transformer_block::TransformerBlock;
 
 // Vision Transformer Definition
 pub struct VisionTransformer {
     patch_embedding: nn::Linear,
     blocks: Vec<TransformerBlock>,
     head: nn::Linear,
-    patch_size: i64, // Added patch_size here
+    patch_size: i64,
+    optimizer: Optimizer,
 }
 
 impl VisionTransformer {
     pub fn new(
-        vs: &nn::Path,
+        vs: &nn::VarStore,
         depth: i64,
         embed_dim: i64,
         num_heads: i64,
         mlp_dim: i64,
         num_classes: i64,
         dropout: f64,
-        patch_size: i64
+        patch_size: i64,
+        learning_rate: f64,
     ) -> Self {
+        let root_path = vs.root();
         let patch_dim = 3 * patch_size * patch_size;
-        let patch_embedding = nn::linear(vs / "patch_embedding", patch_dim, embed_dim, Default::default());
-        let head = nn::linear(vs / "head", embed_dim, num_classes, Default::default());
+        let patch_embedding = nn::linear(&root_path / "patch_embedding", patch_dim, embed_dim, Default::default());
+        let head = nn::linear(&root_path / "head", embed_dim, num_classes, Default::default());
 
         let mut blocks = Vec::new();
         for i in 0..depth {
-            blocks.push(TransformerBlock::new(&(vs / format!("block_{}", i)), embed_dim, num_heads, mlp_dim, dropout));
+            blocks.push(TransformerBlock::new(&(&root_path / format!("block_{}", i)), embed_dim, num_heads, mlp_dim, dropout));
         }
+
+        let optimizer = nn::Adam::default().build(vs, learning_rate).expect("Failed to build optimizer");
 
         VisionTransformer {
             patch_embedding,
             blocks,
             head,
             patch_size,
+            optimizer,
         }
     }
 
@@ -58,10 +64,12 @@ impl VisionTransformer {
         output
     }
 
-    // pub fn backward(&self, predictions: &Tensor, targets: &Tensor, optimizer: &mut nn::Optimizer) {
-    //     let loss = predictions.cross_entropy_for_logits(targets);
-    //     optimizer.zero_grad();
-    //     loss.backward();
-    //     optimizer.step();
-    // }
+    pub fn train_step(&mut self, inputs: &Tensor, targets: &Tensor) -> f64 {
+        let outputs = self.forward(inputs);
+        let targets = targets.argmax(-1, false);
+        let loss = outputs.cross_entropy_for_logits(&targets);
+        loss.backward();
+        self.optimizer.step();
+        loss.double_value(&[])
+    }
 }

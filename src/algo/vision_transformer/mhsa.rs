@@ -32,11 +32,4 @@ impl MultiHeadSelfAttention {
         // Context vector
         attn.matmul(&v).view([batch_size, seq_len, embed_dim]).apply(&self.proj)
     }
-
-    // pub fn backward(&self, predictions: &Tensor, targets: &Tensor, optimizer: &mut nn::Optimizer) {
-    //     let loss = predictions.mse_loss(targets, tch::Reduction::Mean);
-    //     optimizer.zero_grad();
-    //     loss.backward();
-    //     optimizer.step();
-    // }
 }

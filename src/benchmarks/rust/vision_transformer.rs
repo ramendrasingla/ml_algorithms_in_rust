@@ -2,14 +2,11 @@ use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::Path;
 use std::time::Instant;
-use tch::{nn, Tensor};
-use tch::Device;
+use tch::{nn, Tensor, Device};
 use algo::VisionTransformer;
-// ::ViT::module::VisionTransformer;
-
 
 pub fn benchmark_vision_transformer() {
-    // Select device: MPS (Metal), CUDA, or CPU
+    // Select device: CUDA or CPU
     let device = if Device::cuda_if_available().is_cuda() {
         Device::Cuda(0)
     } else {
@@ -20,31 +17,33 @@ pub fn benchmark_vision_transformer() {
 
     // Initialize the Vision Transformer
     let vs = nn::VarStore::new(device);
-    let model = VisionTransformer::new(
-        &vs.root(),
+    let mut model = VisionTransformer::new(
+        &vs,
         12,  // Number of Transformer blocks
         768, // Embedding dimension
         12,  // Number of attention heads
         3072, // MLP hidden dimension
         10,  // Number of output classes
         0.1, // Dropout rate
-        16, // Patch Size
+        16,  // Patch Size
+        0.001 // Learning rate
     );
 
-    // Random input tensor
-    let input = Tensor::randn(&[256, 3, 224, 224], (tch::Kind::Float, device));
+    // Random input tensor and target tensor
+    let inputs = Tensor::randn(&[256, 3, 224, 224], (tch::Kind::Float, device));
+    let targets = Tensor::randn(&[256, 10], (tch::Kind::Float, device)); // Example target tensor
 
     // File path for logging
-    let log_file_path = "./data/benchmarks/vision_transformer.csv";
+    let log_file_path = "./data/benchmarks/vision_transformer_train.csv";
 
     // Perform benchmarking
-    let mut new_durations = vec![];
+    let mut new_data = vec![];
     for epoch in 1..=10 {
         let start = Instant::now();
-        let _output = model.forward(&input); // Forward pass
+        let loss = model.train_step(&inputs, &targets);
         let duration = start.elapsed().as_secs_f64();
-        new_durations.push((epoch, duration));
-        println!("Epoch {} Duration: {:.2} seconds", epoch, duration);
+        new_data.push((epoch, loss, duration));
+        println!("Epoch {} - Loss: {:.4}, Duration: {:.2} seconds", epoch, loss, duration);
     }
 
     // Read existing data if file exists
@@ -54,25 +53,14 @@ pub fn benchmark_vision_transformer() {
         let reader = BufReader::new(file);
         for (i, line) in reader.lines().enumerate() {
             let line = line.expect("Failed to read line");
-            if i == 0 {
-                continue; // Skip header
-            }
+            if i == 0 { continue; } // Skip header
             let parts: Vec<&str> = line.split(',').collect();
-            if parts.len() >= 2 {
+            if parts.len() >= 3 {
                 let epoch = parts[0].parse::<usize>().unwrap_or(0);
-                let python_duration = parts[1].parse::<f64>().unwrap_or(0.0);
-                existing_data.push((epoch, python_duration));
+                let rust_loss = parts[1].parse::<f64>().unwrap_or(0.0);
+                let rust_duration = parts[2].parse::<f64>().unwrap_or(0.0);
+                existing_data.push((epoch, rust_loss, rust_duration));
             }
-        }
-    }
-
-    // Perform left join
-    let mut merged_data = vec![];
-    for (epoch, rust_duration) in new_durations {
-        if let Some(&(existing_epoch, python_duration)) = existing_data.iter().find(|&&(e, _)| e == epoch) {
-            merged_data.push((existing_epoch, python_duration, rust_duration));
-        } else {
-            merged_data.push((epoch, 0.0, rust_duration)); // 0.0 if Python Duration is missing
         }
     }
 
@@ -86,12 +74,12 @@ pub fn benchmark_vision_transformer() {
     let mut writer = BufWriter::new(file);
 
     // Write header
-    writeln!(writer, "Epoch,Python Duration (seconds),Rust Duration (seconds)")
+    writeln!(writer, "Epoch,Rust Loss,Rust Duration (seconds)")
         .expect("Failed to write header to log file");
 
     // Write data
-    for (epoch, python_duration, rust_duration) in merged_data {
-        writeln!(writer, "{},{:.2},{:.2}", epoch, python_duration, rust_duration)
+    for (epoch, loss, duration) in new_data {
+        writeln!(writer, "{},{:.4},{:.2}", epoch, loss, duration)
             .expect("Failed to write data to log file");
     }
 

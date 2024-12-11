@@ -1,1 +1,1 @@
-pub mod ViT;
+pub mod vision_transformer;

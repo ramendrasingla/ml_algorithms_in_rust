@@ -16,11 +16,4 @@ impl MLP {
     pub fn forward(&self, x: &Tensor) -> Tensor {
         x.apply(&self.fc1).relu().dropout(self.dropout, true).apply(&self.fc2)
     }
-
-    // pub fn backward(&self, predictions: &Tensor, targets: &Tensor, optimizer: &mut nn::Optimizer) {
-    //     let loss = predictions.cross_entropy_for_logits(targets);
-    //     optimizer.zero_grad();
-    //     loss.backward();
-    //     optimizer.step();
-    // }
 }

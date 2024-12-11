@@ -1,7 +1,7 @@
 use tch::{nn, Tensor};
 use tch::nn::{Module, Linear};
-use crate::algo::ViT::mhsa::MultiHeadSelfAttention;
-use crate::algo::ViT::mlp::MLP;
+use crate::algo::vision_transformer::mhsa::MultiHeadSelfAttention;
+use crate::algo::vision_transformer::mlp::MLP;
 
 pub struct TransformerBlock {
     attention: MultiHeadSelfAttention,
@@ -30,16 +30,4 @@ impl TransformerBlock {
         let add_residual2 = &norm2_out + &add_residual1;
         add_residual2
     }
-
-    // pub fn backward(
-    //     &self,
-    //     attn_predictions: &Tensor,
-    //     attn_targets: &Tensor,
-    //     mlp_predictions: &Tensor,
-    //     mlp_targets: &Tensor,
-    //     optimizer: &mut nn::Optimizer,
-    // ) {
-    //     self.attention.backward(attn_predictions, attn_targets, optimizer);
-    //     self.mlp.backward(mlp_predictions, mlp_targets, optimizer);
-    // }
 }
