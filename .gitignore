@@ -1,0 +1,16 @@
+# Ignore Rust Compilation folders/files
+target
+Cargo.lock
+
+# Ignore Python virtual environments
+.venv/
+python_env/
+
+# Ignorning the data downloaded data
+data
+
+# Rust compilation
+target
+
+# Env Setup
+build.rs
