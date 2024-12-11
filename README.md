@@ -42,14 +42,17 @@ To work with this repository, ensure the following tools are installed:
    cd ml_algorithms_in_rust
    ```
 2.	Navigate to the desired branch for a specific project (e.g., Vision Transformer):
+
    ```bash
    git checkout feature/vision_transformer
    ```
 3. Build the Rust project:
+   
    ```bash
    cargo build --release
    ```
-4. Set up the Python environment for comparison:
+5. Set up the Python environment for comparison:
+   
    ```bash
    pip install -r requirements.txt
    ```
@@ -61,7 +64,6 @@ To work with this repository, ensure the following tools are installed:
    cargo run --bin benchmark
    ```
 2. **Benchmark against Python (if applicable):**
-  Navigate to the Python implementation and run:
 
   ```bash
   python src/benchmarks/python/benchmark_vit.py
