@@ -90,13 +90,3 @@ Contributions are welcome! If you'd like to contribute:
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Contact
-
-For questions or feedback, feel free to reach out:
-
-- **Author:** Ramendra Singla
-- **GitHub:** [@ramendrasingla](https://github.com/ramendrasingla)
-- **Medium:** [@ramendrasingla](https://medium.com/@ramendrasingla)
-- **X:** [@singla_ram99](https://x.com/singla_ram99)
-  
